@@ -233,11 +233,6 @@ async def nearby_station(
         distance = geodesic(user_coords, station_coords).kilometers
 
         if distance <= range_km:  # Filter stations within range
-            # Convert image to base64 if exists
-            if station.image:  # Assuming image is stored as bytes in the Station model
-                encoded_image = base64.b64encode(station.image).decode('utf-8')
-                station.image = encoded_image
-
             nearby_stations.append(station)
 
     if not nearby_stations:

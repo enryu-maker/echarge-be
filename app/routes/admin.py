@@ -6,6 +6,8 @@ from app.schemas import user as userSchema
 from app.schemas import book as bookSchema
 from app.database import SessionLocale
 from app.model.admin import Admin
+from app.model.cng import Station
+
 from app.model import user, cng, book
 
 from datetime import timedelta
@@ -149,9 +151,7 @@ async def create_slot(slot_id: int, db: db_depandancy):
 
 @router.post("/station-register", status_code=status.HTTP_201_CREATED)
 async def station_register(
-    user: user_dependancy,
     name: str = Form(...),
-    image: UploadFile = File(None),
     phone_number: str = Form(...),
     passcode: str = Form(...),
     description: str = Form(None),
@@ -162,46 +162,45 @@ async def station_register(
     state: str = Form(...),
     country: str = Form(...),
     postal_code: str = Form(...),
-    fuel_available: bool = Form(True),
     price: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    admin = db.query(Admin).filter(Admin.id ==
-                                   user["user_id"]).first()
-    if admin:
-        icon_data = await image.read() if image else None
-
-        new_station = cng.Station(
-            name=name,
-            image=icon_data,
-            phone_number=phone_number,
-            passcode=passcode,
-            description=description,
-            latitude=latitude,
-            longitude=longitude,
-            address=address,
-            city=city,
-            state=state,
-            country=country,
-            postal_code=postal_code,
-            fuel_available=fuel_available,
-            price=price,
-            is_active=True
+    station = db.query(Station).filter(Station.phone_number ==
+                                       phone_number).first()
+    if station:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Station Already Exist"
         )
-        try:
-            db.add(new_station)
-            db.commit()
-            db.refresh(new_station)
+    new_station = cng.Station(
+        name=name,
+        phone_number=phone_number,
+        passcode=passcode,
+        description=description,
+        latitude=latitude,
+        longitude=longitude,
+        address=address,
+        city=city,
+        state=state,
+        country=country,
+        postal_code=postal_code,
+        price=price,
+        is_active=True
+    )
+    try:
+        db.add(new_station)
+        db.commit()
+        db.refresh(new_station)
 
-            return {
-                "message": "Station created successfully",
-            }
+        return {
+            "message": "Station created successfully",
+        }
 
-        except Exception as e:
-            print(e)
-            db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        print(e)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 # User API
 
