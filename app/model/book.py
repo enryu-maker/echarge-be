@@ -19,8 +19,6 @@ class Booking(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     station_id = Column(Integer, ForeignKey('stations.id'), nullable=False)
-    booking_slot = Column(Integer, ForeignKey(
-        'bookingslot.id'), nullable=False)
     amount = Column(Integer, nullable=False)
     status = Column(String, nullable=False)
     order_id = Column(String, unique=True, default=lambda: str(uuid.uuid4()))

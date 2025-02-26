@@ -90,6 +90,22 @@ async def get_fuel(user: user_dependancy, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/get-station/", status_code=status.HTTP_200_OK)
+async def get_fuel(user: user_dependancy, db: Session = Depends(get_db)):
+    # Query the workers from the database by the current user's station_id
+    db_station = db.query(Station).filter(
+        Station.id == user["user_id"]).first()
+
+    if db_station:
+        # Return the list of workers serialized as WorkerRegister Pydantic models
+        return db_station
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Station not found"
+    )
+
+
 @router.put("/toggle-fuel/", status_code=status.HTTP_201_CREATED)
 async def worker_register(user: user_dependancy, db: db_depandancy):
     db_station = db.query(Station).filter(
@@ -328,20 +344,12 @@ async def card_fetch(user: user_dependancy, db: Session = Depends(get_db)):
 @router.get("/order-update/", status_code=status.HTTP_200_OK)
 async def card_update(
         user: user_dependancy,
-        order_id: int,
+        order_id: str,
         db: Session = Depends(get_db)):
-    worker = db.query(Worker).filter(Worker.id == user['user_id']).first()
-
-    if not worker:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Worker not found"
-        )
-
     try:
         order = (
             db.query(Booking)
-            .filter(Booking.user_id == order_id)
+            .filter(Booking.order_id == order_id)
             .first()
         )
         order.status = "Completed"

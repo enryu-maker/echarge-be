@@ -17,7 +17,6 @@ class BookingSlotRead(BookingSlotCreate):
 
 class BookingCreate(BaseModel):
     station_id: int
-    booking_slot: int
     amount: int
     status: str
 

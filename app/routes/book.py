@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.schemas.book import BookingRead
 from app.schemas import book as bookSchema
 from app.database import SessionLocale
-from app.model.book import Booking, BookingSlot
+from app.model.book import Booking
 from app.model.user import User, Wallet
 from app.model.cng import Station
 from sqlalchemy.sql import func
@@ -55,7 +55,6 @@ async def create_order(user: user_dependancy, bookingcreate: bookSchema.BookingC
         new_order = Booking(
             user_id=db_user.id,
             station_id=bookingcreate.station_id,
-            booking_slot=bookingcreate.booking_slot,
             amount=bookingcreate.amount,
             status=bookingcreate.status,
         )
@@ -84,12 +83,11 @@ async def create_order(user: user_dependancy, bookingcreate: bookSchema.BookingC
 @router.get("/station-orders/", response_model=list[dict], status_code=status.HTTP_200_OK)
 async def station_order(user: user_dependancy, db: Session = Depends(get_db)):
     # Query the bookings, joining with User, Station, and BookingSlot to get the additional info
+    print(user)
     orders = db.query(
         Booking.order_id,
         User.name.label('user_name'),  # Alias the user name
         Station.name.label('station_name'),  # Alias the station name
-        BookingSlot.start_time_new,
-        BookingSlot.end_time_new,
         Booking.amount,
         Booking.status
     ).join(
@@ -97,13 +95,11 @@ async def station_order(user: user_dependancy, db: Session = Depends(get_db)):
     ).join(
         # Join with Station to get the station name
         Station, Station.id == Booking.station_id
-    ).join(
-        # Join with BookingSlot for the start_time_new
-        BookingSlot, BookingSlot.id == Booking.booking_slot
     ).filter(
         # Filter by the station_id of the current user
         Booking.station_id == user['user_id']
     ).all()
+    print(orders)
 
     if orders:
         # Format the data to include the user_name, station_name, and other fields
@@ -113,9 +109,6 @@ async def station_order(user: user_dependancy, db: Session = Depends(get_db)):
                 "order_id": order.order_id,
                 "user_name": order.user_name,  # Access the aliased user_name
                 "station_name": order.station_name,  # Access the aliased station_name
-                # Access the start_time_new field from BookingSlot
-                "slot_start_time": order.start_time_new,
-                "slot_end_time": order.end_time_new,
                 "amount": order.amount,
                 "status": order.status
             })
@@ -175,7 +168,6 @@ async def user_order(user: user_dependancy, db: Session = Depends(get_db)):
                     "latitude": order.station.latitude,
                     "longitude": order.station.longitude,
                 },
-                "booking_slot": order.booking_slot,
                 "user_id": order.user_id,
             }
             for order in user_orders
